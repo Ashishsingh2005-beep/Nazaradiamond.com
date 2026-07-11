@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-purple: #4A2C40;
+  --color-brand-purpleHover: #3B2233;
+  --color-brand-purple-hover: #3B2233;
+  --color-brand-gold: #C59B27;
+  --color-brand-goldHover: #AE851D;
+  --color-brand-gold-hover: #AE851D;
+  --color-brand-gray: #F8F5F6;
+  --color-brand-darkText: #2D2D2D;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+body {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #FFFFFF;
+  color: #2D2D2D;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+body.dark {
+  background-color: #0F090E;
+  color: #F8F5F6;
+}
+
+/* Glassmorphism utility */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dark .glassmorphism {
+  background: rgba(26, 15, 24, 0.7);
+  border: 1px solid rgba(197, 155, 39, 0.15);
+}
+
+.luxury-gradient {
+  background: linear-gradient(135deg, #4A2C40 0%, #2D1A27 100%);
+}
+
+.dark .luxury-gradient {
+  background: linear-gradient(135deg, #25121F 0%, #0F050C 100%);
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F8F5F6;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #1A0F18;
+}
+::-webkit-scrollbar-thumb {
+  background: #C59B27;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #AE851D;
+}
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(90deg, #2A1A25 25%, #3D2937 50%, #2A1A25 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Custom glow animations */
+@keyframes gold-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(197, 155, 39, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(197, 155, 39, 0.6);
+  }
+}
+
+.glow-gold {
+  animation: gold-glow 3s infinite ease-in-out;
+}
+
+/* Luxury bounce */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+.animate-bounce-slow {
+  animation: bounce-slow 4s infinite ease-in-out;
+}
+
