@@ -210,14 +210,18 @@ const getOrders = async (req, res) => {
 // @route   PUT /api/orders/:id/status
 // @access  Private/Admin
 const updateOrderStatus = async (req, res) => {
-  const { status } = req.body;
+  const { status, isPaid } = req.body;
 
   try {
     if (!global.isMongoConnected) {
       const idx = global.mockOrders.findIndex((o) => o._id === req.params.id);
 
       if (idx > -1) {
-        global.mockOrders[idx].orderStatus = status;
+        if (status !== undefined) global.mockOrders[idx].orderStatus = status;
+        if (isPaid !== undefined) {
+          global.mockOrders[idx].isPaid = isPaid;
+          if (isPaid) global.mockOrders[idx].paidAt = new Date();
+        }
         return res.json(global.mockOrders[idx]);
       } else {
         return res.status(404).json({ message: 'Order not found' });
@@ -227,7 +231,11 @@ const updateOrderStatus = async (req, res) => {
     const order = await Order.findById(req.params.id);
 
     if (order) {
-      order.orderStatus = status;
+      if (status !== undefined) order.orderStatus = status;
+      if (isPaid !== undefined) {
+        order.isPaid = isPaid;
+        if (isPaid) order.paidAt = Date.now();
+      }
       const updatedOrder = await order.save();
       res.json(updatedOrder);
     } else {

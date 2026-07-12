@@ -23,6 +23,15 @@ export default function Checkout() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
+  const [paymentMethodTab, setPaymentMethodTab] = useState('card');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [selectedBank, setSelectedBank] = useState('');
+  const [gatewayError, setGatewayError] = useState('');
+
   // Redirect to login if user is not authenticated
   useEffect(() => {
     if (!user) {
@@ -119,29 +128,68 @@ export default function Checkout() {
 
   const handleProcessPayment = async () => {
     setPaymentLoading(true);
-    try {
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        }
-      };
+    setTimeout(async () => {
+      try {
+        const config = {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`
+          }
+        };
 
-      const paymentResult = {
-        paymentId: `pay_mock_${Math.random().toString(36).substring(2, 11)}`,
-        status: 'success',
-        email_address: user.email
-      };
+        const paymentResult = {
+          paymentId: `pay_${paymentMethodTab}_${Math.random().toString(36).substring(2, 11)}`,
+          status: 'success',
+          email_address: user.email
+        };
 
-      await axios.put(`${API_URL}/orders/${createdOrder._id}/pay`, paymentResult, config);
-      
-      clearCart();
-      setShowPaymentModal(false);
-      navigate(`/checkout?success=true&orderId=${createdOrder._id}`);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Payment simulation failed');
-      setPaymentLoading(false);
+        await axios.put(`${API_URL}/orders/${createdOrder._id}/pay`, paymentResult, config);
+        
+        clearCart();
+        setShowPaymentModal(false);
+        navigate(`/checkout?success=true&orderId=${createdOrder._id}`);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Payment simulation failed');
+        setPaymentLoading(false);
+      }
+    }, 1500);
+  };
+
+  const handleValidateAndPay = (e) => {
+    e.preventDefault();
+    setGatewayError('');
+
+    if (paymentMethodTab === 'card') {
+      if (!cardName) {
+        setGatewayError('Please enter cardholder name');
+        return;
+      }
+      const cleanedCard = cardNumber.replace(/\s/g, '');
+      if (cleanedCard.length < 16) {
+        setGatewayError('Please enter a valid 16-digit card number');
+        return;
+      }
+      if (!cardExpiry || !cardExpiry.includes('/')) {
+        setGatewayError('Please enter card expiry date (MM/YY)');
+        return;
+      }
+      if (cardCvv.length < 3) {
+        setGatewayError('Please enter 3-digit CVV code');
+        return;
+      }
+    } else if (paymentMethodTab === 'upi') {
+      if (!upiId || !upiId.includes('@')) {
+        setGatewayError('Please enter a valid UPI ID (containing @)');
+        return;
+      }
+    } else if (paymentMethodTab === 'netbanking') {
+      if (!selectedBank) {
+        setGatewayError('Please select a bank to proceed');
+        return;
+      }
     }
+
+    handleProcessPayment();
   };
 
   const successUrlParam = new URLSearchParams(window.location.search).get('success');
@@ -357,9 +405,9 @@ export default function Checkout() {
       {/* Simulated Razorpay Payment Modal */}
       <AnimatePresence>
         {showPaymentModal && (
-          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
             <motion.div 
-              className="bg-white dark:bg-[#1A0F18] rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-brand-gold/25"
+              className="bg-white dark:bg-[#1A0F18] rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-brand-gold/25"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -374,25 +422,192 @@ export default function Checkout() {
                 <CreditCard className="h-8 w-8 text-brand-gold" />
               </div>
 
-              <div className="p-6 space-y-6 text-center">
-                <div className="space-y-1">
+              {/* Amount Info */}
+              <div className="bg-slate-50 dark:bg-[#150D15] px-6 py-4 flex items-center justify-between border-b border-gray-100 dark:border-brand-gold/10">
+                <div className="text-left">
                   <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-medium">Paying to Nazara Diamonds</p>
-                  <p className="text-3xl font-extrabold text-brand-purple dark:text-white">₹{total.toLocaleString()}</p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-300 font-light truncate max-w-[200px]">Order: {createdOrder?._id}</p>
                 </div>
+                <p className="text-2xl font-extrabold text-brand-purple dark:text-brand-gold">₹{total.toLocaleString()}</p>
+              </div>
 
-                <div className="bg-blue-50 dark:bg-blue-950/25 text-blue-800 dark:text-blue-300 text-xs leading-relaxed p-3.5 rounded-lg border border-blue-100 dark:border-blue-900/40 font-light">
-                  This is a simulated Razorpay payment gateway designed for testing. Click 'Authorize' to complete the transaction.
-                </div>
+              {/* Tabs list */}
+              <div className="flex border-b border-gray-100 dark:border-brand-gold/15 bg-gray-50 dark:bg-[#150D15]/80 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => { setPaymentMethodTab('card'); setGatewayError(''); }}
+                  className={`flex-1 py-3 text-center border-b-2 transition-all ${
+                    paymentMethodTab === 'card' 
+                      ? 'border-brand-gold text-brand-purple dark:text-brand-gold bg-white dark:bg-[#1A0F18]' 
+                      : 'border-transparent text-gray-500 hover:text-brand-purple dark:hover:text-white'
+                  }`}
+                >
+                  Card
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPaymentMethodTab('upi'); setGatewayError(''); }}
+                  className={`flex-1 py-3 text-center border-b-2 transition-all ${
+                    paymentMethodTab === 'upi' 
+                      ? 'border-brand-gold text-brand-purple dark:text-brand-gold bg-white dark:bg-[#1A0F18]' 
+                      : 'border-transparent text-gray-500 hover:text-brand-purple dark:hover:text-white'
+                  }`}
+                >
+                  UPI / QR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPaymentMethodTab('netbanking'); setGatewayError(''); }}
+                  className={`flex-1 py-3 text-center border-b-2 transition-all ${
+                    paymentMethodTab === 'netbanking' 
+                      ? 'border-brand-gold text-brand-purple dark:text-brand-gold bg-white dark:bg-[#1A0F18]' 
+                      : 'border-transparent text-gray-500 hover:text-brand-purple dark:hover:text-white'
+                  }`}
+                >
+                  Netbanking
+                </button>
+              </div>
+
+              {/* Tabs Content */}
+              <form onSubmit={handleValidateAndPay} className="p-6 space-y-6">
+                
+                {gatewayError && (
+                  <div className="bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-400 text-[11px] font-semibold p-3 rounded border border-red-100 dark:border-red-900/40 flex items-center gap-1">
+                    <ShieldAlert className="h-4 w-4 shrink-0 text-red-600" />
+                    <span>{gatewayError}</span>
+                  </div>
+                )}
+
+                {paymentMethodTab === 'card' && (
+                  <div className="space-y-4 text-left">
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Cardholder Name</label>
+                      <input
+                        type="text"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        placeholder="e.g. Ashish Singh"
+                        className="w-full border border-gray-200 dark:border-brand-gold/25 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-gold bg-transparent text-brand-purple dark:text-white font-light"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Card Number</label>
+                      <input
+                        type="text"
+                        maxLength="19"
+                        value={cardNumber}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').replace(/(\d{4})/g, '$1 ').trim();
+                          setCardNumber(val);
+                        }}
+                        placeholder="1234 5678 1234 5678"
+                        className="w-full border border-gray-200 dark:border-brand-gold/25 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-gold bg-transparent text-brand-purple dark:text-white font-light font-mono"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Expiry Date</label>
+                        <input
+                          type="text"
+                          maxLength="5"
+                          value={cardExpiry}
+                          onChange={(e) => {
+                            let val = e.target.value.replace(/\D/g, '');
+                            if (val.length > 2) {
+                              val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                            }
+                            setCardExpiry(val);
+                          }}
+                          placeholder="MM/YY"
+                          className="w-full border border-gray-200 dark:border-brand-gold/25 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-gold bg-transparent text-brand-purple dark:text-white font-light font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">CVV</label>
+                        <input
+                          type="password"
+                          maxLength="3"
+                          value={cardCvv}
+                          onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
+                          placeholder="•••"
+                          className="w-full border border-gray-200 dark:border-brand-gold/25 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-gold bg-transparent text-brand-purple dark:text-white font-light font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethodTab === 'upi' && (
+                  <div className="space-y-4 text-left">
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-light leading-normal">
+                      Pay using Google Pay, PhonePe, Paytm, BHIM, or any other UPI app.
+                    </p>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Enter UPI ID (VPA)</label>
+                      <input
+                        type="text"
+                        value={upiId}
+                        onChange={(e) => setUpiId(e.target.value)}
+                        placeholder="e.g. ashish@okaxis"
+                        className="w-full border border-gray-200 dark:border-brand-gold/25 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-gold bg-transparent text-brand-purple dark:text-white font-light font-mono"
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center justify-around gap-2 pt-2">
+                      {['Google Pay', 'PhonePe', 'Paytm', 'BHIM'].map(app => (
+                        <button
+                          type="button"
+                          key={app}
+                          onClick={() => setUpiId(`customer@${app.toLowerCase().replace(' ', '')}`)}
+                          className="px-2.5 py-1.5 border border-gray-200 dark:border-brand-gold/15 hover:border-brand-gold rounded text-[10px] font-bold text-gray-600 dark:text-white bg-transparent transition-all"
+                        >
+                          {app}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethodTab === 'netbanking' && (
+                  <div className="space-y-4 text-left">
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-light leading-normal">
+                      Select your bank from the list below to authenticate payment.
+                    </p>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">Choose Bank</label>
+                      <select
+                        value={selectedBank}
+                        onChange={(e) => setSelectedBank(e.target.value)}
+                        className="w-full border border-gray-200 dark:border-brand-gold/25 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-gold bg-white dark:bg-[#1A0F18] text-brand-purple dark:text-white font-light cursor-pointer"
+                      >
+                        <option value="">-- Select Bank --</option>
+                        <option value="HDFC Bank">HDFC Bank</option>
+                        <option value="State Bank of India">State Bank of India (SBI)</option>
+                        <option value="ICICI Bank">ICICI Bank</option>
+                        <option value="Axis Bank">Axis Bank</option>
+                        <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-2 pt-2">
                   <button
-                    onClick={handleProcessPayment}
+                    type="submit"
                     disabled={paymentLoading}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-lg transition-colors text-xs uppercase tracking-widest shadow-md"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-lg transition-colors text-xs uppercase tracking-widest shadow-md flex items-center justify-center gap-2"
                   >
-                    {paymentLoading ? 'Authorizing transaction...' : 'Authorize simulated payment'}
+                    {paymentLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Verifying payment details...
+                      </>
+                    ) : `Pay ₹${total.toLocaleString()}`}
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowPaymentModal(false)}
                     disabled={paymentLoading}
                     className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-brand-purple/20 dark:text-white text-gray-600 font-bold py-2.5 rounded-lg transition-colors text-[10px] uppercase tracking-widest"
@@ -401,7 +616,7 @@ export default function Checkout() {
                   </button>
                 </div>
 
-              </div>
+              </form>
             </motion.div>
           </div>
         )}

@@ -402,6 +402,17 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleToggleOrderPayment = async (orderId, currentPaidStatus) => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      await axios.put(`${API_URL}/orders/${orderId}/status`, { isPaid: !currentPaidStatus }, config);
+      showNotification(`Order payment status marked as ${!currentPaidStatus ? 'PAID' : 'UNPAID'}`);
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to toggle payment status');
+    }
+  };
+
   // HANDLERS FOR USERS
   const handleToggleBlockUser = async (id) => {
     try {
@@ -1237,17 +1248,50 @@ export default function AdminDashboard() {
                 {/* Visual Order Timeline Stepper (Monitor Section) */}
                 {activeOrderForTimeline && (
                   <div className="bg-white dark:bg-[#180E1B]/60 border border-slate-200/60 dark:border-brand-gold/15 rounded-3xl p-6 shadow-xl shadow-purple-950/5 backdrop-blur-sm space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/50 dark:border-brand-gold/10 pb-4 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-slate-200/50 dark:border-brand-gold/10 pb-6">
                       <div>
-                        <span className="text-[10px] text-brand-gold font-bold uppercase tracking-widest">Active Order Tracking</span>
-                        <h4 className="text-sm font-bold text-brand-purple dark:text-white mt-0.5">
-                          Order ID: <span className="font-mono text-slate-400 dark:text-gray-400">{activeOrderForTimeline._id}</span>
+                        <span className="text-[10px] text-brand-gold font-bold uppercase tracking-widest block">Active Order Tracking</span>
+                        <h4 className="text-sm font-bold text-brand-purple dark:text-white mt-1">
+                          Order ID: <span className="font-mono text-slate-400 dark:text-gray-400 text-xs">{activeOrderForTimeline._id}</span>
                         </h4>
+                        <div className="mt-3 space-y-1">
+                          <p className="text-xs text-slate-500 dark:text-gray-400">
+                            Customer: <span className="font-semibold text-brand-purple dark:text-white">{activeOrderForTimeline.user?.name || 'Guest'}</span>
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-gray-400 font-mono">
+                            Email: {activeOrderForTimeline.user?.email || 'N/A'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-400 dark:text-gray-400 uppercase block">Delivery Address</span>
-                        <p className="text-xs font-semibold text-brand-purple dark:text-brand-gold">
-                          {activeOrderForTimeline.shippingAddress?.addressLine}, {activeOrderForTimeline.shippingAddress?.city} ({activeOrderForTimeline.shippingAddress?.zip})
+                      
+                      <div>
+                        <span className="text-[10px] text-slate-400 dark:text-gray-400 uppercase tracking-wider block">Contact & Payment</span>
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs text-slate-500 dark:text-gray-400 font-mono">
+                            Phone: <span className="font-semibold text-brand-purple dark:text-white">{activeOrderForTimeline.shippingAddress?.phone || 'N/A'}</span>
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1.5 mt-1.5">
+                            Payment: 
+                            <span 
+                              onClick={() => handleToggleOrderPayment(activeOrderForTimeline._id, activeOrderForTimeline.isPaid)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer hover:opacity-80 transition-opacity ${
+                                activeOrderForTimeline.isPaid 
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' 
+                                  : 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400'
+                              }`}
+                              title="Click to toggle payment status"
+                            >
+                              {activeOrderForTimeline.isPaid ? 'PAID' : 'UNPAID'} (Click to Toggle)
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="md:text-right">
+                        <span className="text-[10px] text-slate-400 dark:text-gray-400 uppercase tracking-wider block">Delivery Address</span>
+                        <p className="text-xs font-semibold text-brand-purple dark:text-brand-gold mt-2 leading-relaxed">
+                          {activeOrderForTimeline.shippingAddress?.address || activeOrderForTimeline.shippingAddress?.addressLine || 'N/A'}<br />
+                          {activeOrderForTimeline.shippingAddress?.city || 'N/A'} - {activeOrderForTimeline.shippingAddress?.postalCode || activeOrderForTimeline.shippingAddress?.zip || 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -1366,10 +1410,10 @@ export default function AdminDashboard() {
                                 </div>
                               </td>
                               <td className="p-3 font-bold text-brand-purple dark:text-brand-gold">₹{o.totalPrice.toLocaleString()}</td>
-                              <td className="p-3">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              <td className="p-3" onClick={(e) => { e.stopPropagation(); handleToggleOrderPayment(o._id, o.isPaid); }}>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer hover:opacity-80 transition-opacity ${
                                   o.isPaid ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400'
-                                }`}>{o.isPaid ? 'PAID' : 'UNPAID'}</span>
+                                }`} title="Click to toggle payment status">{o.isPaid ? 'PAID' : 'UNPAID'}</span>
                               </td>
                               <td className="p-3 font-semibold text-brand-purple dark:text-white">{o.orderStatus}</td>
                               <td className="p-3 text-center" onClick={e => e.stopPropagation()}>
