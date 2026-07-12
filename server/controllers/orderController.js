@@ -22,7 +22,7 @@ const addOrderItems = async (req, res) => {
 
       // 1. Check & deduct inventory from mock products
       for (const item of orderItems) {
-        const idx = global.mockProducts.findIndex((p) => p._id === item.productId);
+        const idx = global.mockProducts.findIndex((p) => p._id === item.product);
 
         if (idx > -1) {
           const product = global.mockProducts[idx];
@@ -67,7 +67,7 @@ const addOrderItems = async (req, res) => {
 
     // Check inventory and deduct stock
     for (const item of orderItems) {
-      const product = await Product.findById(item.productId);
+      const product = await Product.findById(item.product);
 
       if (!product) {
         res.status(404);
