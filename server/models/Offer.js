@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const offerSchema = new mongoose.Schema({
   name: { type: String, required: true }, // e.g. "Diwali Sale"
+  discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
   discountValue: { type: Number, required: true }, // 20 for 20%
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },

@@ -53,6 +53,7 @@ export default function AdminDashboard() {
 
   // Offer Form state
   const [oName, setOName] = useState('');
+  const [oDiscountType, setODiscountType] = useState('percentage');
   const [oDiscountValue, setODiscountValue] = useState('');
   const [oStartDate, setOStartDate] = useState('');
   const [oEndDate, setOEndDate] = useState('');
@@ -277,6 +278,7 @@ export default function AdminDashboard() {
     if (!oName || !oDiscountValue || !oStartDate || !oEndDate) return;
     const payload = {
       name: oName,
+      discountType: oDiscountType,
       discountValue: Number(oDiscountValue),
       startDate: new Date(oStartDate),
       endDate: new Date(oEndDate),
@@ -290,6 +292,7 @@ export default function AdminDashboard() {
       await axios.post(`${API_URL}/offers`, payload, config);
       showNotification('Automatic Offer created!');
       setOName('');
+      setODiscountType('percentage');
       setODiscountValue('');
       setOStartDate('');
       setOEndDate('');
@@ -995,8 +998,17 @@ export default function AdminDashboard() {
                       <input type="text" value={oName} onChange={e => setOName(e.target.value)} placeholder="Diwali Discount" className="w-full border border-slate-200 dark:border-brand-gold/20 rounded-xl p-2.5 bg-transparent text-slate-800 dark:text-white focus:ring-1 focus:ring-brand-gold outline-none" required />
                     </div>
                     <div>
-                      <label className="block text-slate-400 dark:text-gray-400 font-bold uppercase mb-1">Discount Percentage (%)</label>
-                      <input type="number" value={oDiscountValue} onChange={e => setODiscountValue(e.target.value)} placeholder="20" className="w-full border border-slate-200 dark:border-brand-gold/20 rounded-xl p-2.5 bg-transparent text-slate-800 dark:text-white focus:ring-1 focus:ring-brand-gold outline-none" required />
+                      <label className="block text-slate-400 dark:text-gray-400 font-bold uppercase mb-1">Discount Type</label>
+                      <select value={oDiscountType} onChange={e => setODiscountType(e.target.value)} className="w-full border border-slate-200 dark:border-brand-gold/20 rounded-xl p-2.5 bg-transparent dark:bg-[#180E1B] text-slate-800 dark:text-white focus:ring-1 focus:ring-brand-gold outline-none">
+                        <option value="percentage" className="dark:text-black">Percentage (%)</option>
+                        <option value="fixed" className="dark:text-black">Fixed Amount (₹)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 dark:text-gray-400 font-bold uppercase mb-1">
+                        Discount {oDiscountType === 'percentage' ? 'Percentage (%)' : 'Value (₹)'}
+                      </label>
+                      <input type="number" value={oDiscountValue} onChange={e => setODiscountValue(e.target.value)} placeholder={oDiscountType === 'percentage' ? "20" : "1000"} className="w-full border border-slate-200 dark:border-brand-gold/20 rounded-xl p-2.5 bg-transparent text-slate-800 dark:text-white focus:ring-1 focus:ring-brand-gold outline-none" required />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -1059,7 +1071,9 @@ export default function AdminDashboard() {
                         {offers.map(o => (
                           <tr key={o._id} className="border-b border-slate-100 dark:border-brand-gold/5 hover:bg-slate-50/40 dark:hover:bg-white/5 transition-colors">
                             <td className="p-3 font-semibold text-brand-purple dark:text-white">{o.name}</td>
-                            <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">{o.discountValue}% Off</td>
+                            <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                               {o.discountType === 'fixed' ? `₹${o.discountValue.toLocaleString()} Off` : `${o.discountValue}% Off`}
+                             </td>
                             <td className="p-3 text-[11px] text-slate-500 dark:text-gray-400">
                               {new Date(o.startDate).toLocaleDateString()} to {new Date(o.endDate).toLocaleDateString()}
                             </td>

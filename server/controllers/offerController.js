@@ -5,13 +5,14 @@ const Coupon = require('../models/Coupon');
 // @route   POST /api/offers
 // @access  Private/Admin
 const createOffer = async (req, res) => {
-  const { name, discountValue, startDate, endDate, applicableOn, applicableCategory, applicableProducts, status } = req.body;
+  const { name, discountType, discountValue, startDate, endDate, applicableOn, applicableCategory, applicableProducts, status } = req.body;
 
   try {
     if (!global.isMongoConnected) {
       const newOffer = {
         _id: `offer_mock_${Math.random().toString(36).substring(2, 11)}`,
         name,
+        discountType: discountType || 'percentage',
         discountValue: Number(discountValue),
         startDate: new Date(startDate),
         endDate: new Date(endDate),
@@ -28,6 +29,7 @@ const createOffer = async (req, res) => {
 
     const offer = new Offer({
       name,
+      discountType: discountType || 'percentage',
       discountValue,
       startDate,
       endDate,

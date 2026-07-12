@@ -46,7 +46,19 @@ const getApplicableOffer = async (product) => {
       }
 
       if (isApplicable) {
-        if (!bestOffer || offer.discountValue > bestOffer.discountValue) {
+        const currentOfferType = offer.discountType || 'percentage';
+        const currentOfferAmt = currentOfferType === 'percentage'
+          ? (product.basePrice * offer.discountValue) / 100
+          : offer.discountValue;
+
+        const bestOfferType = bestOffer ? (bestOffer.discountType || 'percentage') : 'percentage';
+        const bestOfferAmt = bestOffer
+          ? (bestOfferType === 'percentage'
+              ? (product.basePrice * bestOffer.discountValue) / 100
+              : bestOffer.discountValue)
+          : 0;
+
+        if (!bestOffer || currentOfferAmt > bestOfferAmt) {
           bestOffer = offer;
         }
       }
