@@ -130,7 +130,9 @@ export default function ProductDetails() {
   // Calculate dynamic active offer discount price
   const getDiscountedPrice = () => {
     if (product.applicableOffer) {
-      return Math.round(currentUnitPrice * (1 - product.applicableOffer.discountValue / 100));
+      return product.applicableOffer.discountType === 'fixed'
+        ? Math.max(0, Math.round(currentUnitPrice - product.applicableOffer.discountValue))
+        : Math.max(0, Math.round(currentUnitPrice * (1 - product.applicableOffer.discountValue / 100)));
     }
     return currentUnitPrice;
   };
@@ -309,7 +311,7 @@ export default function ProductDetails() {
                 <>
                   <span className="text-sm text-gray-400 dark:text-gray-500 line-through">₹{currentUnitPrice.toLocaleString()}</span>
                   <span className="text-[10px] uppercase font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-800/40 px-2 py-0.5 rounded">
-                    {product.applicableOffer.name} (-{product.applicableOffer.discountValue}%)
+                    {product.applicableOffer.name} ({product.applicableOffer.discountType === 'fixed' ? `-₹${product.applicableOffer.discountValue.toLocaleString()}` : `-${product.applicableOffer.discountValue}%`})
                   </span>
                 </>
               )}

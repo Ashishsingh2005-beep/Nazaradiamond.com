@@ -53,7 +53,11 @@ const getApplicableOffer = async (product) => {
     }
 
     return bestOffer
-      ? { name: bestOffer.name, discountValue: bestOffer.discountValue }
+      ? { 
+          name: bestOffer.name, 
+          discountValue: bestOffer.discountValue,
+          discountType: bestOffer.discountType || 'percentage'
+        }
       : null;
   } catch (err) {
     console.error('Error calculating applicable offer:', err);

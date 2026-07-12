@@ -346,7 +346,10 @@ export default function Home() {
                       {p.applicableOffer ? (
                         <div>
                           <p className="text-brand-gold font-bold text-base leading-tight">
-                            ₹{(p.basePrice * (1 - p.applicableOffer.discountValue / 100)).toLocaleString()}
+                            ₹{(p.applicableOffer.discountType === 'fixed'
+                              ? Math.max(0, p.basePrice - p.applicableOffer.discountValue)
+                              : Math.max(0, p.basePrice * (1 - p.applicableOffer.discountValue / 100))
+                            ).toLocaleString()}
                           </p>
                           <p className="text-[10px] text-gray-400 line-through">₹{p.basePrice.toLocaleString()}</p>
                         </div>
