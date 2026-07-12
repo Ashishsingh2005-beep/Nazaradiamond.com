@@ -81,7 +81,7 @@ const getApplicableOffer = async (product) => {
 // @route   GET /api/products
 // @access  Public
 const getProducts = async (req, res) => {
-  const { category, search, metal } = req.query;
+  const { category, search, metal, size } = req.query;
 
   try {
     let products = [];
@@ -94,14 +94,20 @@ const getProducts = async (req, res) => {
       }
 
       if (search) {
+        const term = search.toLowerCase();
         filtered = filtered.filter((p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          (p.tags && p.tags.some(t => t.toLowerCase().includes(search.toLowerCase())))
+          p.name.toLowerCase().includes(term) ||
+          (p.tags && p.tags.some(t => t.toLowerCase().includes(term))) ||
+          (p.variations?.sizes && p.variations.sizes.some(s => s.toLowerCase() === term || `size ${s.toLowerCase()}` === term))
         );
       }
 
       if (metal) {
         filtered = filtered.filter((p) => p.variations.metals.includes(metal));
+      }
+
+      if (size) {
+        filtered = filtered.filter((p) => p.variations?.sizes && p.variations.sizes.includes(size));
       }
 
       // Sort by newest first
@@ -117,12 +123,17 @@ const getProducts = async (req, res) => {
       if (search) {
         query.$or = [
           { name: { $regex: search, $options: 'i' } },
-          { tags: { $in: [new RegExp(search, 'i')] } }
+          { tags: { $in: [new RegExp(search, 'i')] } },
+          { 'variations.sizes': { $in: [search] } }
         ];
       }
 
       if (metal) {
         query['variations.metals'] = metal;
+      }
+
+      if (size) {
+        query['variations.sizes'] = size;
       }
 
       const dbProducts = await Product.find(query).sort({ createdAt: -1 });

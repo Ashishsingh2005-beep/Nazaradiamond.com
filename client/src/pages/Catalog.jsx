@@ -6,6 +6,139 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_URL } from '../store/useStore';
 import HoverImage from '../components/HoverImage';
 
+function ProductCard({ p, handleMouseMove, handleMouseLeave }) {
+  const colors = p.variations?.colors && p.variations.colors.length > 0 ? p.variations.colors : ['Rose Gold', 'White Gold', 'Yellow Gold'];
+  const [selectedColor, setSelectedColor] = useState(colors[0] || 'Rose Gold');
+
+  const getColorFilter = (color) => {
+    if (color === 'White Gold') {
+      return 'grayscale(100%) brightness(1.15) contrast(1.1)';
+    }
+    if (color === 'Yellow Gold') {
+      return 'sepia(0.4) saturate(2.2) hue-rotate(-15deg) brightness(1.05)';
+    }
+    if (color === 'Rose Gold') {
+      return 'sepia(0.15) saturate(1.4) hue-rotate(-30deg) brightness(1.02)';
+    }
+    return 'none';
+  };
+
+  const filteredImages = p.images ? p.images.filter(img => !img.includes('cropped-icon')) : [];
+  if (filteredImages.length === 0 && p.images && p.images.length > 0) {
+    filteredImages.push(p.images[0]);
+  }
+
+  return (
+    <div 
+      className="border border-gray-100 dark:border-brand-gold/10 rounded-2xl overflow-hidden bg-white dark:bg-[#1A0F18]/50 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full group"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <Link 
+        to={`/product/${p._id}`} 
+        className="relative h-64 overflow-hidden bg-gradient-to-b from-brand-gray/10 to-white dark:from-[#20121C] dark:to-[#1A0F18] flex items-center justify-center shrink-0 cursor-pointer"
+        style={{ perspective: '1000px' }}
+      >
+        <div style={{ filter: getColorFilter(selectedColor) }} className="w-full h-full flex items-center justify-center transition-all duration-500">
+          <HoverImage
+            images={filteredImages}
+            alt={p.name}
+            tiltStyle={{
+              transform: 'rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(var(--tilt-scale, 1))',
+              transformStyle: 'preserve-3d',
+            }}
+          />
+        </div>
+        
+        {/* Absolute Badges on Image Card */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 shadow-sm">
+          {p.ratings >= 4.8 && (
+            <span className="bg-brand-purple text-white text-[9px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
+              <Sparkles className="h-3 w-3 text-brand-gold fill-brand-gold" /> Best Seller
+            </span>
+          )}
+          <span className="bg-white/80 dark:bg-[#1A0F18]/85 backdrop-blur text-brand-purple dark:text-brand-gold text-[8px] uppercase font-bold tracking-widest px-2.5 py-1.5 rounded border border-gray-100 dark:border-brand-gold/15">
+            IGI Certified
+          </span>
+        </div>
+      </Link>
+
+      <div className="p-5 flex flex-col justify-between flex-grow">
+        <div>
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-brand-gold font-bold uppercase tracking-wider bg-brand-gold/10 px-2 py-0.5 rounded-full border border-brand-gold/20">{p.category}</span>
+            
+            {/* Color Swatches */}
+            <div className="flex items-center gap-1.5">
+              {colors.map((c) => {
+                let swatchClass = "";
+                if (c === 'Rose Gold') swatchClass = "bg-gradient-to-tr from-[#e5a99e] to-[#fcdcd3] border-rose-300";
+                else if (c === 'White Gold') swatchClass = "bg-gradient-to-tr from-[#d1d5db] to-[#f3f4f6] border-slate-300";
+                else if (c === 'Yellow Gold') swatchClass = "bg-gradient-to-tr from-[#f3c844] to-[#fef08a] border-yellow-400";
+                
+                return (
+                  <button
+                    key={c}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelectedColor(c);
+                    }}
+                    title={c}
+                    className={`w-3.5 h-3.5 rounded-full border ${swatchClass} transition-all duration-200 ${
+                      selectedColor === c ? 'ring-2 ring-brand-purple dark:ring-brand-gold scale-125' : 'hover:scale-110'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          
+          <h3 className="font-semibold text-brand-purple dark:text-white text-base mt-2.5 line-clamp-1">
+            <Link to={`/product/${p._id}`} className="hover:text-brand-gold transition-colors">{p.name}</Link>
+          </h3>
+          
+          {/* Product Rating and Reviews count */}
+          <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex text-brand-gold">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className={`h-3 w-3 ${i < Math.floor(p.ratings) ? 'fill-brand-gold' : 'text-gray-200 dark:text-gray-700'}`} />
+              ))}
+            </div>
+            <span className="text-[10px] text-gray-400 font-medium">({p.numReviews || 0})</span>
+          </div>
+
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2 font-light">{p.description}</p>
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-gray-100 dark:border-brand-gold/10 flex items-center justify-between">
+          <div>
+            <p className="text-[9px] text-gray-400 uppercase font-medium">Starting From</p>
+            {p.applicableOffer ? (
+              <div>
+                <p className="text-brand-gold font-bold text-lg leading-tight">
+                  ₹{(p.applicableOffer.discountType === 'fixed'
+                    ? Math.max(0, p.basePrice - p.applicableOffer.discountValue)
+                    : Math.max(0, p.basePrice * (1 - p.applicableOffer.discountValue / 100))
+                  ).toLocaleString()}
+                </p>
+                <p className="text-[10px] text-gray-400 line-through">₹{p.basePrice.toLocaleString()}</p>
+              </div>
+            ) : (
+              <p className="text-brand-gold font-bold text-lg leading-tight">₹{p.basePrice.toLocaleString()}</p>
+            )}
+          </div>
+          <Link
+            to={`/product/${p._id}`}
+            className="bg-brand-purple dark:bg-brand-gold text-white text-xs font-semibold px-4.5 py-2.5 rounded-md hover:bg-brand-purpleHover dark:hover:bg-brand-goldHover transition-colors shadow-sm"
+          >
+            Configure
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
@@ -16,6 +149,7 @@ export default function Catalog() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedMetal, setSelectedMetal] = useState('');
+  const [selectedSize, setSelectedSize] = useState('');
   const [sortBy, setSortBy] = useState('newest');
 
   const categories = ['Rings', 'Earrings', 'Necklaces', 'Pendants', 'Bracelets & Bangles'];
@@ -54,6 +188,7 @@ export default function Catalog() {
         let url = `${API_URL}/products?`;
         if (selectedCategory) url += `category=${encodeURIComponent(selectedCategory)}&`;
         if (selectedMetal) url += `metal=${selectedMetal}&`;
+        if (selectedSize) url += `size=${encodeURIComponent(selectedSize)}&`;
         if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
 
         const { data } = await axios.get(url);
@@ -66,7 +201,7 @@ export default function Catalog() {
     };
 
     fetchProducts();
-  }, [selectedCategory, selectedMetal, searchTerm]);
+  }, [selectedCategory, selectedMetal, selectedSize, searchTerm]);
 
   // Apply sorting on fetched products
   useEffect(() => {
@@ -96,6 +231,7 @@ export default function Catalog() {
   const clearAllFilters = () => {
     setSelectedCategory('');
     setSelectedMetal('');
+    setSelectedSize('');
     setSearchTerm('');
     setSearchParams({});
     setSortBy('newest');
@@ -164,8 +300,6 @@ export default function Catalog() {
                 ))}
               </div>
             </div>
-
-            {/* Filter by choice of metal */}
             <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-brand-gold/10">
               <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Choice of Metal</h3>
               <div className="grid grid-cols-3 gap-2">
@@ -185,6 +319,26 @@ export default function Catalog() {
               </div>
             </div>
 
+            {/* Filter by size */}
+            <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-brand-gold/10">
+              <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Available Sizes</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {['7', '8', '9', '10', '11', '12', '13', '14', 'One Size'].map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedSize(selectedSize === s ? '' : s)}
+                    className={`py-1.5 px-3 text-[10px] font-bold rounded-md border transition-all ${
+                      selectedSize === s
+                        ? 'bg-brand-purple dark:bg-brand-gold text-white border-brand-purple dark:border-brand-gold shadow-sm'
+                        : 'border-gray-200 dark:border-brand-gold/20 text-gray-500 dark:text-gray-300 hover:border-brand-purple dark:hover:border-brand-gold bg-white dark:bg-transparent'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
           </div>
         </aside>
 
@@ -198,7 +352,7 @@ export default function Catalog() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search rings, pendants, earrings..."
+                placeholder="Search rings, pendants, sizes (e.g. 10)..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-brand-gold/20 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-gold dark:focus:ring-brand-gold bg-transparent text-sm font-light text-brand-purple dark:text-white"
               />
               <Search className="absolute left-3.5 top-2.5 h-4.5 w-4.5 text-gray-400" />
@@ -227,7 +381,7 @@ export default function Catalog() {
           </div>
 
           {/* Active filter tags list */}
-          {(selectedCategory || selectedMetal || searchTerm) && (
+          {(selectedCategory || selectedMetal || selectedSize || searchTerm) && (
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mr-1">Active filters:</span>
               {selectedCategory && (
@@ -240,6 +394,12 @@ export default function Catalog() {
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-brand-gold/10 text-brand-gold border border-brand-gold/20 px-2.5 py-1 rounded-full">
                   Metal: {selectedMetal}
                   <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedMetal('')} />
+                </span>
+              )}
+              {selectedSize && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-brand-gold/10 text-brand-gold border border-brand-gold/20 px-2.5 py-1 rounded-full">
+                  Size: {selectedSize}
+                  <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedSize('')} />
                 </span>
               )}
               {searchTerm && (
@@ -271,86 +431,12 @@ export default function Catalog() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((p) => (
-                <div 
+                <ProductCard 
                   key={p._id} 
-                  className="border border-gray-100 dark:border-brand-gold/10 rounded-2xl overflow-hidden bg-white dark:bg-[#1A0F18]/50 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full group"
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <Link 
-                    to={`/product/${p._id}`} 
-                    className="relative h-64 overflow-hidden bg-gradient-to-b from-brand-gray/10 to-white dark:from-[#20121C] dark:to-[#1A0F18] flex items-center justify-center shrink-0 cursor-pointer"
-                    style={{ perspective: '1000px' }}
-                  >
-                    <HoverImage
-                      images={p.images}
-                      alt={p.name}
-                      tiltStyle={{
-                        transform: 'rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(var(--tilt-scale, 1))',
-                        transformStyle: 'preserve-3d',
-                      }}
-                    />
-                    
-                    {/* Absolute Badges on Image Card */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-1.5 shadow-sm">
-                      {p.ratings >= 4.8 && (
-                        <span className="bg-brand-purple text-white text-[9px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                          <Sparkles className="h-3 w-3 text-brand-gold fill-brand-gold" /> Best Seller
-                        </span>
-                      )}
-                      <span className="bg-white/80 dark:bg-[#1A0F18]/85 backdrop-blur text-brand-purple dark:text-brand-gold text-[8px] uppercase font-bold tracking-widest px-2.5 py-1.5 rounded border border-gray-100 dark:border-brand-gold/15">
-                        IGI Certified
-                      </span>
-                    </div>
-                  </Link>
-
-                  <div className="p-5 flex flex-col justify-between flex-grow">
-                    <div>
-                      <span className="text-[10px] text-brand-gold font-bold uppercase tracking-wider bg-brand-gold/10 px-2 py-0.5 rounded-full border border-brand-gold/20">{p.category}</span>
-                      
-                      <h3 className="font-semibold text-brand-purple dark:text-white text-base mt-2.5 line-clamp-1">
-                        <Link to={`/product/${p._id}`} className="hover:text-brand-gold transition-colors">{p.name}</Link>
-                      </h3>
-                      
-                      {/* Product Rating and Reviews count */}
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <div className="flex text-brand-gold">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className={`h-3 w-3 ${i < Math.floor(p.ratings) ? 'fill-brand-gold' : 'text-gray-200 dark:text-gray-700'}`} />
-                          ))}
-                        </div>
-                        <span className="text-[10px] text-gray-400 font-medium">({p.numReviews || 0})</span>
-                      </div>
-
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2 font-light">{p.description}</p>
-                    </div>
-
-                    <div className="mt-5 pt-4 border-t border-gray-100 dark:border-brand-gold/10 flex items-center justify-between">
-                      <div>
-                        <p className="text-[9px] text-gray-400 uppercase font-medium">Starting From</p>
-                        {p.applicableOffer ? (
-                          <div>
-                            <p className="text-brand-gold font-bold text-lg leading-tight">
-                              ₹{(p.applicableOffer.discountType === 'fixed'
-                                ? Math.max(0, p.basePrice - p.applicableOffer.discountValue)
-                                : Math.max(0, p.basePrice * (1 - p.applicableOffer.discountValue / 100))
-                              ).toLocaleString()}
-                            </p>
-                            <p className="text-[10px] text-gray-400 line-through">₹{p.basePrice.toLocaleString()}</p>
-                          </div>
-                        ) : (
-                          <p className="text-brand-gold font-bold text-lg leading-tight">₹{p.basePrice.toLocaleString()}</p>
-                        )}
-                      </div>
-                      <Link
-                        to={`/product/${p._id}`}
-                        className="bg-brand-purple dark:bg-brand-gold text-white text-xs font-semibold px-4.5 py-2.5 rounded-md hover:bg-brand-purpleHover dark:hover:bg-brand-goldHover transition-colors shadow-sm"
-                      >
-                        Configure
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                  p={p} 
+                  handleMouseMove={handleMouseMove} 
+                  handleMouseLeave={handleMouseLeave} 
+                />
               ))}
             </div>
           )}
