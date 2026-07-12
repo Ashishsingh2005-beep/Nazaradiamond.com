@@ -118,6 +118,7 @@ app.use('/api/addresses', addressRoutes);
 const User = require('./models/User');
 const Product = require('./models/Product');
 const Offer = require('./models/Offer');
+const Category = require('./models/Category');
 
 const seedDatabase = async () => {
   if (!global.isMongoConnected) return;
@@ -163,6 +164,17 @@ const seedDatabase = async () => {
         return rest;
       }));
       console.log('Initial offers seeded successfully.');
+    }
+
+    // 4. Seed Categories
+    const categoryCount = await Category.countDocuments();
+    if (categoryCount === 0) {
+      console.log('Seeding initial categories...');
+      await Category.create(global.mockCategories.map(c => {
+        const { _id, ...rest } = c;
+        return rest;
+      }));
+      console.log('Initial categories seeded successfully.');
     }
   } catch (err) {
     console.error(`Database seeding failed: ${err.message}`);
