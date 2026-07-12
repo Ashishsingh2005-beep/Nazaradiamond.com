@@ -83,7 +83,10 @@ const addressRoutes = require('./routes/addressRoutes');
 dotenv.config();
 
 // Connect to Database
-connectDB();
+connectDB().then(() => {
+  // Trigger database seeding
+  seedDatabase();
+});
 
 const app = express();
 
@@ -166,8 +169,6 @@ const seedDatabase = async () => {
   }
 };
 
-// Trigger database seeding
-seedDatabase();
 
 // 404 Route handler
 app.use((req, res, next) => {
